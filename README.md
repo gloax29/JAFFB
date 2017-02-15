@@ -1,5 +1,4 @@
 # JAFFB
-JAFFB
 =========================
 
 JAFFB parsing and mapping for the file flat with annotation imitating JAXB
@@ -54,7 +53,7 @@ public class DateConvertddMMyyyy extends PositionalAdapter<String, Date> {
     private static SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy");
 
     @Override
-    public Date unparsing(String v) throws Exception {
+    public Date unmarshal(String v) throws Exception {
         Date d = null;
 
         try {
@@ -71,7 +70,7 @@ public class DateConvertddMMyyyy extends PositionalAdapter<String, Date> {
     }
 
     @Override
-    public String parsing(Date v) throws Exception {
+    public String marshal(Date v) throws Exception {
         if (v == null) {
 
             return "        ";
