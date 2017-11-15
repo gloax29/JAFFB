@@ -80,7 +80,7 @@ public abstract class Unmarshaller extends CommunContext {
         for (Field field : fdcp) {
             FieldPositional f = new FieldPositional(field);
             if (f.getPositionnalMappingParse() != null)
-            fDligneRoot.add(new FieldPositional(field));
+                fDligneRoot.add(new FieldPositional(field));
 
         }
         Collections.sort(fDligneRoot, COMPARATEUR_RANG_FIELD);
@@ -183,17 +183,21 @@ public abstract class Unmarshaller extends CommunContext {
             Object obInvoke = null;
             String valueChaine = null;
             int depart = fieldPosiotinalAnnot.getPositionnalMappingParse().offset() - 1;
+            try {
 
-            if (fieldPosiotinalAnnot.getPositionnalMappingParse().length() == -1) {
-                valueChaine = chaineCaractere.substring(depart);
-            } else {
+                if (fieldPosiotinalAnnot.getPositionnalMappingParse().length() == -1) {
+                    valueChaine = chaineCaractere.substring(depart);
+                } else {
 
-                valueChaine = chaineCaractere.substring(depart, depart + fieldPosiotinalAnnot.getPositionnalMappingParse().length());
-                if (fieldPosiotinalAnnot.getPositionnalMappingParse().stripChaine()) {
-                    valueChaine = StringUtils.strip(valueChaine);
+                    valueChaine = chaineCaractere.substring(depart, depart + fieldPosiotinalAnnot.getPositionnalMappingParse().length());
+                    if (fieldPosiotinalAnnot.getPositionnalMappingParse().stripChaine()) {
+                        valueChaine = StringUtils.strip(valueChaine);
+                    }
                 }
-            }
+            } catch (Exception e) {
+                throw new JFFPBException(" Problem de longueur de chaine :" + chaineCaractere + " : " + e.getMessage());
 
+            }
             if (fieldPosiotinalAnnot.getPositionnalControlRegex() != null) {
                 // si la ligne est conform
                 if (!Pattern.compile(fieldPosiotinalAnnot.getPositionnalControlRegex().expression()).matcher(valueChaine).find()) {

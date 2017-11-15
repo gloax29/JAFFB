@@ -90,7 +90,7 @@ public @interface PositionalMappingParse {
      * 
      * @return
      */
-    String DefaultValu() default "";
+    String DefaultValue() default "";
 
     /**
      * permet a l'ecriture de la chaîne de caracter de decaler <br />

@@ -14,6 +14,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import javax.flat.bind.annotation.adapter.PositionalDefault;
 import javax.flat.bind.annotation.adapter.PositionalAdapter;
 
 /**
@@ -47,5 +48,15 @@ public @interface PositionalJavaTypeAdapter {
      * @return
      */
     boolean parcing() default true;
+
+    /**
+     * ajout valeur par default a l'ecriture<br />
+     * si pour des motif particulier on ne veut pas de cette valeur malgre celle-ci<br />
+     * on peut la desactiver en gardent la longueur de la chaine
+     * 
+     * @return
+     */
+    @SuppressWarnings("rawtypes")
+    Class<? extends PositionalDefault> DefaultValue() default PositionalDefault.class;
 
 }
