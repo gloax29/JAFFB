@@ -1,7 +1,14 @@
 # JAFFB
 =========================
 
-JAFFB parsing and mapping for the file flat with annotation imitating JAXB
+JAFFB framework for parsing and mapping the files flat with annotation imitating JAXB.
+it can support flat files which has multiple internal structures.
+
+Framework JAFFB pour l'analyse et le mappage des fichiers à plat avec annotation imitant JAXB.
+il peut prendre en charge des fichiers plat qui comporte plusieurs structures interne.
+
+
+
 
 Gestion de fichier plat
 
