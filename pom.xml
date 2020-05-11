@@ -5,10 +5,14 @@
     <version>4.0.0</version>
     <name>JAVA FILE FLAT POSITIONAL BINDING</name>
     <description>Parcing File positionel and csv in Object with annotation</description>
-
+	<properties>
+	<SrcPath>src</SrcPath>
+	<jdk>1.8</jdk>
+	</properties>
 
     <build>
         <finalName>JAFFB</finalName>
+        <sourceDirectory>${SrcPath}</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -36,8 +40,8 @@
                     <excludes>
                         <exclude>src/test/resources/*.txt</exclude>
                     </excludes>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>${jdk}</source>
+                    <target>${jdk}</target>
                 </configuration>
             </plugin>
         </plugins>
