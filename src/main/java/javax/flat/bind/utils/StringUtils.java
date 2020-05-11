@@ -1,5 +1,6 @@
 package javax.flat.bind.utils;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -293,4 +294,66 @@ public class StringUtils {
         return true;
     }
 
+    /**
+     * <p>
+     * Counts how many times the substring appears in the larger String.
+     * </p>
+     * <p>
+     * A <code>null</code> or empty ("") String input returns <code>0</code>.
+     * </p>
+     *
+     * <pre>
+     * StringUtils.countMatches(null, *)       = 0
+     * StringUtils.countMatches("", *)         = 0
+     * StringUtils.countMatches("abba", null)  = 0
+     * StringUtils.countMatches("abba", "")    = 0
+     * StringUtils.countMatches("abba", "a")   = 2
+     * StringUtils.countMatches("abba", "ab")  = 1
+     * StringUtils.countMatches("abba", "xxx") = 0
+     * </pre>
+     *
+     * @param str the String to check, may be null
+     * @param sub the substring to count, may be null
+     * @return the number of occurrences, 0 if either String is <code>null</code>
+     */
+    public static int countMatches(String str, String sub) {
+        if (isEmpty(str) || isEmpty(sub)) {
+            return 0;
+        }
+        int count = 0;
+        int idx = 0;
+        while ((idx = str.indexOf(sub, idx)) != -1) {
+            count++;
+            idx += sub.length();
+        }
+        return count;
+    }
+
+    /**
+     * Gets the convert time formtat.
+     *
+     * @param v the v
+     * @return the convert time formtat
+     */
+    public static String getconvertTimeFormtat(Timestamp v) {
+        StringBuffer buffer = new StringBuffer(repeat('0', 18));
+        String str = v.toString().replaceAll("\\.", "").replaceAll(":", "").replaceAll("-", "").replaceAll(" ", "");
+        buffer.replace(0, str.length(), str);
+
+        return buffer.toString();
+
+    }
+
+    public static Timestamp getTimtampsValu(String v) {
+
+        return Timestamp.valueOf(getconvertFormtatTime(v));
+
+    }
+
+    private static String getconvertFormtatTime(String string) {
+        StringBuffer buffer = new StringBuffer(string);
+        buffer.insert(14, ".").insert(12, ":").insert(10, ":").insert(8, " ").insert(6, "-").insert(4, "-");
+        return buffer.toString();
+
+    }
 }

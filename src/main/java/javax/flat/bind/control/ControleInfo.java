@@ -2,6 +2,7 @@ package javax.flat.bind.control;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,10 +62,10 @@ public class ControleInfo {
         try {
             fdcp = retroFields(element.getFormatRootElem().getForClass().newInstance(), fdcp, numberField);
         } catch (InstantiationException e) {
-            // TODO Auto-generated catch block
+
             e.printStackTrace();
         } catch (IllegalAccessException e) {
-            // TODO Auto-generated catch block
+
             e.printStackTrace();
         }
 
@@ -138,10 +139,10 @@ public class ControleInfo {
         try {
             declaredMethods = retroMethodes(argFormatRoot.getForClass().newInstance(), declaredMethods, numberMethode);
         } catch (InstantiationException e) {
-            // TODO Auto-generated catch block
+
             e.printStackTrace();
         } catch (IllegalAccessException e) {
-            // TODO Auto-generated catch block
+
             e.printStackTrace();
         }
 
@@ -155,14 +156,28 @@ public class ControleInfo {
 
     public static List<FieldPositional> creatListFieldPositional(Object argobj) throws JFFPBException {
         List<FieldPositional> rtnfdLigneRoot = new ArrayList<FieldPositional>();
+        int numberField = 0;
+        Field[] fdcp = null;
+        fdcp = retroFields(argobj, fdcp, numberField);
 
-        for (Field field : argobj.getClass().getDeclaredFields()) {
+        for (Field field : fdcp) {
 
             rtnfdLigneRoot.add(new FieldPositional(field));
 
         }
 
         return rtnfdLigneRoot;
+    }
+
+    public static Field[] retroFields(Class instanceObject, Field[] fdcp, int numberField) {
+        Object obj = null;
+        try {
+            obj = instanceObject.newInstance();
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+        return retroFields(obj, fdcp, numberField);
     }
 
     public static Field[] retroFields(Object instanceObject, Field[] fdcp, int numberField) {
@@ -183,7 +198,9 @@ public class ControleInfo {
 
         }
 
-        if (!instanceObject.getClass().getSuperclass().getName().equals(Object.class.getName())) {
+        if (!instanceObject.getClass().getSuperclass().getName().equals(Object.class.getName())
+                && !Modifier.isAbstract(instanceObject.getClass().getSuperclass().getModifiers())
+                && !Modifier.isInterface(instanceObject.getClass().getSuperclass().getModifiers())) {
 
             try {
                 fdcp = retroFields(((Class<?>) instanceObject.getClass().getSuperclass()).newInstance(), fdcp, numberField);
@@ -241,7 +258,9 @@ public class ControleInfo {
 
         }
 
-        if (!obj.getClass().getSuperclass().getName().equals(Object.class.getName())) {
+        if (!obj.getClass().getSuperclass().getName().equals(Object.class.getName())
+                && !Modifier.isAbstract(obj.getClass().getSuperclass().getModifiers())
+                && !Modifier.isInterface(obj.getClass().getSuperclass().getModifiers())) {
 
             try {
                 declaredMethods = retroMethodes(((Class<?>) obj.getClass().getSuperclass()).newInstance(), declaredMethods, numberMethode);

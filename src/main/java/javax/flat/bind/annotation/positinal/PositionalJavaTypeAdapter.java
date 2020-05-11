@@ -14,11 +14,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.flat.bind.annotation.adapter.PositionalDefault;
 import javax.flat.bind.annotation.adapter.PositionalAdapter;
+import javax.flat.bind.annotation.adapter.PositionalDefault;
 
 /**
- * annotation servant a donn� le nom de la class qui Extende PositionalAdapter<String, ReponceType> <br />
+ * annotation servant a donner le nom de la class qui Extende PositionalAdapter<String, ReponceType> <br />
  * Si le format demander n'est pas un format primitif,<br />
  * cette annotation permet de convertir la chaine de carractere <br />
  * en Object complex et L'Object en chaine de carracere
@@ -40,6 +40,15 @@ public @interface PositionalJavaTypeAdapter {
     Class<? extends PositionalAdapter> value();
 
     /**
+     * Default value. si la valeur est null alors on prend pour reference cette valeur <br />
+     * Donne plus de possibliliter que PositionalMappingParse.DefaultValue
+     * 
+     * @return the class<? extends positional default>
+     */
+    @SuppressWarnings("rawtypes")
+    Class<? extends PositionalDefault> DefaultValue() default PositionalDefault.class;
+
+    /**
      * desactive le parcing a la lecture de la chaine car ce la vas avec variant<br />
      * quand on ne connait pas la longueur exacte. attention<br />
      * toute la chaine restente est injecter dans cette varriable qui doit etre declarer Object .<br />
@@ -48,15 +57,5 @@ public @interface PositionalJavaTypeAdapter {
      * @return
      */
     boolean parcing() default true;
-
-    /**
-     * ajout valeur par default a l'ecriture<br />
-     * si pour des motif particulier on ne veut pas de cette valeur malgre celle-ci<br />
-     * on peut la desactiver en gardent la longueur de la chaine
-     * 
-     * @return
-     */
-    @SuppressWarnings("rawtypes")
-    Class<? extends PositionalDefault> DefaultValue() default PositionalDefault.class;
 
 }

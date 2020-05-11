@@ -10,8 +10,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import javax.flat.bind.JFFPBException;
-import javax.flat.bind.annotation.adapter.PositionalDefault;
 import javax.flat.bind.annotation.adapter.PositionalAdapter;
+import javax.flat.bind.annotation.adapter.PositionalDefault;
 import javax.flat.bind.annotation.csv.CsvMappingParse;
 import javax.flat.bind.annotation.positinal.PositionalControlRegex;
 import javax.flat.bind.annotation.positinal.PositionalFormatFile;
@@ -95,14 +95,15 @@ public class PositionalMakeAnnotation {
         for (Method element : value.getMethods()) {
             if ("unmarshal".equals(element.getName()) && parsingORunparsing.equals(UNPARSING)) {
                 for (Class<?> class1 : element.getParameterTypes()) {
-                    if (class1.getName().equals(valeur.getClass().getName()))
-                        try {
+                    try {
+                        if (valeur.getClass().getName().equals(class1.getName())) {
+
                             return value.newInstance().unmarshal(valeur);
-                        } catch (InstantiationException e) {
-                            throw new JFFPBException(e);
-                        } catch (IllegalAccessException e) {
-                            throw new JFFPBException(e);
                         }
+
+                    } catch (Exception e) {
+                        throw new JFFPBException(e);
+                    }
                 }
 
             }
@@ -118,14 +119,11 @@ public class PositionalMakeAnnotation {
 
     }
 
-    @SuppressWarnings("unchecked")
-    public static Object typeAdapterValueDefault(@SuppressWarnings("rawtypes") Class<? extends PositionalDefault> value) throws JFFPBException {
+    public static Object typeAdapterDefault(@SuppressWarnings("rawtypes") Class<? extends PositionalDefault> defaultValue) throws JFFPBException {
 
         try {
-            return value.newInstance().getValue();
-        } catch (InstantiationException e) {
-            throw new JFFPBException(e);
-        } catch (IllegalAccessException e) {
+            return defaultValue.newInstance().getValue();
+        } catch (InstantiationException | IllegalAccessException e) {
             throw new JFFPBException(e);
         }
 
@@ -155,6 +153,7 @@ public class PositionalMakeAnnotation {
     @SuppressWarnings("javadoc")
     public static Object typeAdapterPimitif(Object valeur, Class<?> typeClass) throws JFFPBException {
         String simpleName = typeClass.getSimpleName();
+
         try {
 
             if ("byte".equals(simpleName)) {

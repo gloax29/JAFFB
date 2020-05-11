@@ -6,12 +6,11 @@ package com.flat.internal.unmarshaller;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +58,7 @@ public class Unmarshallerimp extends Unmarshaller {
         if (!file.exists()) {
             throw new JFFPBException("Fichier n'existe pas ! " + file.getAbsolutePath() + " path ==> " + new File("file").getAbsolutePath());
         }
-        return fileRunReadFile(file);
+        return fileRunReadFile(file, Charset.defaultCharset());
     }
 
     @Override
@@ -78,14 +77,12 @@ public class Unmarshallerimp extends Unmarshaller {
         return fileRunRead(inputStream, iso);
     }
 
-    public Object fileRunReadFile(File file) throws JFFPBException {
+    public Object fileRunReadFile(File file, Charset charset) throws JFFPBException {
 
         try {
-
-            return fileRunRead(new FileInputStream(file), Charset.defaultCharset());
-        } catch (FileNotFoundException e) {
-            throw new JFFPBException(e);
-        } catch (IOException e) {
+            // return fileRunRead(Files.readAllLines(file.toPath()));
+            return fileRunRead(new FileInputStream(file), charset);
+        } catch (Exception e) {
             throw new JFFPBException(e);
         }
 
@@ -131,12 +128,16 @@ public class Unmarshallerimp extends Unmarshaller {
                         obList = getNewInstanceList();
                     }
                     obj = getNewInstanceType(formatRoot.getForClass());
+
                     fdLigneRoot = ControleInfo.creatListFieldPositional(obj);
+                    Collections.sort(fdLigneRoot, COMPARATEUR_RANG_FIELD);
+                    // correction de valeur des offset avec laste
+
                     map = ControleInfo.creatMatForMethode(formatRoot);
 
                     ligne = fichierRead.readLine();
                     while (StringUtils.isNotBlank(ligne)) {
-
+                        correctionDeValeurDuAuLast(fdLigneRoot, ligne);
                         if (!formatRoot.isIslist() && (formatRoot.getStartRowsIterationLigne().equals(itElement))) {
 
                             if (formatRoot.getValuLongueurChaine() != -1 && (formatRoot.getValuLongueurChaine() != ligne.length())) {

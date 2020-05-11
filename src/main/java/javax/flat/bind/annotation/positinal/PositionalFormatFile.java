@@ -21,14 +21,13 @@ import java.lang.annotation.Target;
 @Target({ TYPE, FIELD, METHOD })
 public @interface PositionalFormatFile {
 
-	/**
+    /**
      * nom de la classe <br />
      * 
-	 * @return
-	 */
-	String name();
-	
-	
-	String type() default  "txt" ;
+     * @return
+     */
+    String name();
+
+    String type() default "txt";
 
 }

@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import javax.flat.bind.annotation.positinal.PositionalMappingParse;
 import javax.flat.bind.api.FieldCsv;
 import javax.flat.bind.api.FieldPositional;
 import javax.flat.bind.control.ControleInfo;
@@ -51,16 +53,24 @@ public abstract class Unmarshaller extends CommunContext {
     public abstract Object unmarshal(InputStream inputStream) throws JFFPBException;
 
     /**
-     * Converti la chaine de caractere en Object de la<br />
-     * class passer en parametre <br />
-     * 
-     * @param myClass
-     * @param data
-     * @return Object de la class
-     * @throws Throwable
+     * @param inputStream
+     * @param iso
+     * @return
+     * @throws JFFPBException
      */
-    public Object convertStringChaineInObject(Class<?> myClass, String data) throws JFFPBException {
-        Object obj = getNewInstanceType(myClass);
+    public abstract Object unmarshal(InputStream inputStream, Charset iso) throws JFFPBException;
+
+    /**
+     * * Converti la chaine de caractere en prenant Object en refference <br />
+     * passer en parametre <br />
+     * 
+     * @param obj
+     * @param data
+     * @return
+     * @throws JFFPBException
+     */
+    public synchronized Object convertStringChaineInObject(Object obj, String data) throws JFFPBException {
+        // l'intance obj exista deja
         List<FieldPositional> fDligneRoot = new ArrayList<FieldPositional>();
         Map<String, Method> map = new HashMap<String, Method>();
         int numberMethode = 0;
@@ -84,6 +94,8 @@ public abstract class Unmarshaller extends CommunContext {
 
         }
         Collections.sort(fDligneRoot, COMPARATEUR_RANG_FIELD);
+        // correction de valeur des offset avec laste
+        correctionDeValeurDuAuLast(fDligneRoot, data);
         for (FieldPositional field : fDligneRoot) {
 
             makeInvokeSetMethodes(obj, field, map.get(field.getNamSetMethode().toLowerCase()), data);
@@ -92,9 +104,129 @@ public abstract class Unmarshaller extends CommunContext {
                 break;
             }
         }
-
+        restorDeValeurDuAuLast(fDligneRoot);
         return obj;
 
+    }
+
+    private void restorDeValeurDuAuLast(List<FieldPositional> fDligneRoot) {
+        // LOG.info("restor De Va leur Du Au Last Field est laste. recalcule de ");
+
+        for (int i = 0; i < fDligneRoot.size(); i++) {
+
+            FieldPositional field = fDligneRoot.get(i);
+
+            if (field.getPositionnalMappingParse().laste()) {
+
+                try {
+
+                    changeAnnotationValue(fDligneRoot.get(i).getPositionnalMappingParse(), "length", 0);
+                    // LOG.info(String.format("restor De Valeur Du Au Last [%s] ", field.getField().getName()));
+
+                    for (int j = i + 1; j < fDligneRoot.size(); j++) {
+
+                        changeAnnotationValue(fDligneRoot.get(j).getPositionnalMappingParse(), "offset",
+                                fDligneRoot.get(j).getPositionnalMappingParse().original());
+                        // LOG.info(String.format("restor De Valeur Du Au Last [%s] ", fDligneRoot.get(j).getField().getName()));
+
+                    }
+
+                } catch (Exception e) {
+
+                    e.printStackTrace();
+                }
+
+                break;
+            }
+        }
+
+    }
+
+    /**
+     * Correction de valeur du au last. recalcule des Offeset <br />
+     * seul un last peux etre present dans le bean
+     * 
+     * @param fDligneRoot the f dligne root
+     * @param data the data
+     * @param position the position
+     * @throws JFFPBException the JFFPB exception
+     */
+    protected synchronized void correctionDeValeurDuAuLast(List<FieldPositional> fDligneRoot, String data) throws JFFPBException {
+        int unLaste = 0;
+        for (int i = 0; i < fDligneRoot.size(); i++) {
+
+            FieldPositional field = fDligneRoot.get(i);
+
+            if (field.getPositionnalMappingParse().laste()) {
+                // LOG.info(String.format("Le Field est laste. recalcule de [%s] ", field.getField().getName()));
+                int cumule_reste_longeur = 0;
+                int longeurChainerestenteacouper = data.length() - i;
+                for (int j = i + 1; j < fDligneRoot.size(); j++) {
+                    cumule_reste_longeur = cumule_reste_longeur + fDligneRoot.get(j).getPositionnalMappingParse().length();
+
+                }
+
+                changeAnnotationValue(fDligneRoot.get(i).getPositionnalMappingParse(), "length", longeurChainerestenteacouper - cumule_reste_longeur);
+
+                for (int j = i + 1; j < fDligneRoot.size(); j++) {
+
+                    changeAnnotationValue(fDligneRoot.get(j).getPositionnalMappingParse(), "offset",
+                            fDligneRoot.get(j).getPositionnalMappingParse().offset() + longeurChainerestenteacouper - cumule_reste_longeur);
+
+                }
+                break;
+            }
+
+        }
+
+    }
+
+    /**
+     * Changes the annotation value for the given key of the given annotation to newValue and returns the previous value.
+     */
+    @SuppressWarnings("unchecked")
+    public synchronized static void changeAnnotationValue(PositionalMappingParse annotation, String key, Object newValue) throws JFFPBException {
+        try {
+            Object handler = Proxy.getInvocationHandler(annotation);
+            Field f = handler.getClass().getDeclaredField("memberValues");
+            f.setAccessible(true);
+            Map<String, Object> memberValues = (Map<String, Object>) f.get(handler);
+            Object oldValue = memberValues.get(key);
+
+            if (oldValue == null || oldValue.getClass() != newValue.getClass()) {
+                throw new JFFPBException(" IllegalArgumentException  ");
+
+            }
+            // LOG.info(String.format("Clef modifier [%s] ensiene valeur [%s] nouvelle valeur calculer [%s] ", key, oldValue, newValue));
+            memberValues.put(key, newValue);
+        } catch (Exception e) {
+            throw new JFFPBException(" Nombre de colone different de la reorganosation " + e.getMessage());
+        }
+    }
+
+    /**
+     * Converti la chaine de caractere en Object de la<br />
+     * class passer en parametre <br />
+     * 
+     * @param myClass
+     * @param data
+     * @return Object de la class
+     * @throws Throwable
+     */
+    public synchronized Object convertStringChaineInObject(Class<?> myClass, String data) throws JFFPBException {
+        // creation de l'instance
+        Object obj = getNewInstanceType(myClass);
+        return convertStringChaineInObject(obj, data);
+
+    }
+
+    public synchronized Object convertChaineCsvInObject(Class<?> myClass, String data, String regex) throws JFFPBException {
+        return convertChaineCsvInObject(myClass, data, regex, null);
+    }
+
+    public synchronized Object convertChaineCsvInObject(Class<?> myClass, String data, String regex, int[] reorganisation) throws JFFPBException {
+        Object obj = getNewInstanceType(myClass);
+        return convertChaineCsvInObject(obj, data, regex, reorganisation);
     }
 
     /**
@@ -106,31 +238,8 @@ public abstract class Unmarshaller extends CommunContext {
      * @return Object of the Class
      * @throws Exception
      */
-    public Object convertChaineCsvInObject(Class<?> myClass, String data, String regex) throws JFFPBException {
-        List<String> listCSV = StringUtils.splitinList(regex, data);
-        Object obj = getNewInstanceType(myClass);
-        Map<Integer, FieldCsv> fDligneRoot = new HashMap<Integer, FieldCsv>();
-        Map<String, Method> map = new HashMap<String, Method>();
-        for (Method method : obj.getClass().getDeclaredMethods()) {
-
-            map.put(method.getName().toLowerCase(), method);
-
-        }
-
-        for (Field field : obj.getClass().getDeclaredFields()) {
-            FieldCsv fd = new FieldCsv(field);
-            if (fd.getCsvMappingParse() != null) {
-                fDligneRoot.put(fd.getCsvMappingParse().offset(), fd);
-            }
-        }
-
-        for (Integer i = 0; i < listCSV.size(); i++) {
-            if (!StringUtils.isBlank(listCSV.get(i))) {
-                makeInvokeCsvSetMethode(obj, fDligneRoot.get(i + 1), map.get(fDligneRoot.get(i + 1).getNamSetMethode()), listCSV.get(i));
-            }
-        }
-
-        return obj;
+    public synchronized Object convertChaineCsvInObject(Object obj, String data, String regex) throws JFFPBException {
+        return convertChaineCsvInObject(obj, data, regex, null);
 
     }
 
@@ -148,33 +257,54 @@ public abstract class Unmarshaller extends CommunContext {
      * @return Object of the Class
      * @throws Exception
      */
-    public Object convertChaineCsvInObject(Class<?> myClass, String data, String regex, int[] reorganisation) throws JFFPBException {
+    public synchronized Object convertChaineCsvInObject(Object obj, String data, String regex, int[] reorganisation) throws JFFPBException {
+        boolean reorg = reorganisation != null ? true : false;
         List<String> listCSV = StringUtils.splitinList(regex, data);
-        if (reorganisation.length != listCSV.size()) {
-            throw new JFFPBException(" Nombre de colone different de la reorganosation ");
+
+        if (reorg) {
+            if (reorganisation.length != listCSV.size()) {
+                throw new JFFPBException(" Nombre de colone different de la reorganosation ");
+            }
         }
-        Object obj = getNewInstanceType(myClass);
+
         Map<Integer, FieldCsv> fDligneRoot = new HashMap<Integer, FieldCsv>();
         Map<String, Method> map = new HashMap<String, Method>();
-        for (Method method : obj.getClass().getDeclaredMethods()) {
+        int numberMethode = 0;
+        Method[] mth = null;
+
+        mth = ControleInfo.retroMethodes(obj, mth, numberMethode);
+        for (Method method : mth) {
 
             map.put(method.getName().toLowerCase(), method);
 
         }
+        int numberField = 0;
+        Field[] fdcp = null;
+        fdcp = ControleInfo.retroFields(obj, fdcp, numberField);
 
-        for (Field field : obj.getClass().getDeclaredFields()) {
+        for (Field field : fdcp) {
             FieldCsv fd = new FieldCsv(field);
-            fDligneRoot.put(fd.getCsvMappingParse().offset(), fd);
-        }
-
-        for (Integer i = 0; i < reorganisation.length; i++) {
-            if (!StringUtils.isBlank(listCSV.get(reorganisation[i]))) {
-                makeInvokeCsvSetMethode(obj, fDligneRoot.get(i + 1), map.get(fDligneRoot.get(i + 1).getNamSetMethode()),
-                        listCSV.get(reorganisation[i]));
+            if (fd.getCsvMappingParse() != null) {
+                fDligneRoot.put(fd.getCsvMappingParse().offset(), fd);
             }
         }
 
+        if (reorg) {
+            for (Integer i = 0; i < reorganisation.length; i++) {
+                if (!StringUtils.isBlank(listCSV.get(reorganisation[i]))) {
+                    makeInvokeCsvSetMethode(obj, fDligneRoot.get(i + 1), map.get(fDligneRoot.get(i + 1).getNamSetMethode()),
+                            listCSV.get(reorganisation[i]));
+                }
+            }
+        } else {
+            for (Integer i = 0; i < listCSV.size(); i++) {
+                if (!StringUtils.isBlank(listCSV.get(i))) {
+                    makeInvokeCsvSetMethode(obj, fDligneRoot.get(i + 1), map.get(fDligneRoot.get(i + 1).getNamSetMethode()), listCSV.get(i));
+                }
+            }
+        }
         return obj;
+
     }
 
     protected static Object makeInvokeSetMethodes(Object obMake, FieldPositional fieldPosiotinalAnnot, Method method, String chaineCaractere)
@@ -190,14 +320,15 @@ public abstract class Unmarshaller extends CommunContext {
                 } else {
 
                     valueChaine = chaineCaractere.substring(depart, depart + fieldPosiotinalAnnot.getPositionnalMappingParse().length());
-                    if (fieldPosiotinalAnnot.getPositionnalMappingParse().stripChaine()) {
-                        valueChaine = StringUtils.strip(valueChaine);
-                    }
+
                 }
             } catch (Exception e) {
-                throw new JFFPBException(" Problem de longueur de chaine :" + chaineCaractere + " : " + e.getMessage());
-
+                e.printStackTrace();
             }
+            if (fieldPosiotinalAnnot.getPositionnalMappingParse().stripChaine()) {
+                valueChaine = StringUtils.strip(valueChaine);
+            }
+
             if (fieldPosiotinalAnnot.getPositionnalControlRegex() != null) {
                 // si la ligne est conform
                 if (!Pattern.compile(fieldPosiotinalAnnot.getPositionnalControlRegex().expression()).matcher(valueChaine).find()) {
@@ -301,5 +432,4 @@ public abstract class Unmarshaller extends CommunContext {
 
     }
 
-    public abstract Object unmarshal(InputStream inputStream, Charset iso) throws JFFPBException;
 }

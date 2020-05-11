@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,10 +38,22 @@ public abstract class Marshaller extends CommunContext {
     public abstract void marshal(Object object, File fichier) throws JFFPBException;
 
     /**
+     * génére le fichier passé en paramétre,<br />
+     * avec les valeurs de l'objet passé en paramétre
+     */
+    public abstract void marshal(Object object, File fichier, Charset iso) throws JFFPBException;
+
+    /**
      * génére le OutputStream passé en paramétre,<br />
      * avec les valeurs de l'objet passé en paramétre
      */
     public abstract void marshal(Object object, OutputStream out) throws JFFPBException;
+
+    /**
+     * génére le OutputStream passé en paramétre,<br />
+     * avec les valeurs de l'objet passé en paramétre
+     */
+    public abstract void marshal(Object object, OutputStream out, Charset is) throws JFFPBException;
 
     /**
      * génére le fichier passé en paramétre,<br />
@@ -49,10 +62,22 @@ public abstract class Marshaller extends CommunContext {
     public abstract void marshal(Object object, File fichier, Boolean carriageReturn) throws JFFPBException;
 
     /**
+     * génére le fichier passé en paramétre,<br />
+     * avec les valeurs de l'objet passé en paramétre
+     */
+    public abstract void marshal(Object object, File fichier, Charset is, Boolean carriageReturn) throws JFFPBException;
+
+    /**
      * génére le OutputStream passé en paramétre,<br />
      * avec les valeurs de l'objet passé en paramétre
      */
     public abstract void marshal(Object object, OutputStream out, Boolean carriageReturn) throws JFFPBException;
+
+    /**
+     * génére le OutputStream passé en paramétre,<br />
+     * avec les valeurs de l'objet passé en paramétre
+     */
+    public abstract void marshal(Object object, OutputStream out, Charset is, Boolean carriageReturn) throws JFFPBException;
 
     /**
      * @param instanceObject
@@ -205,20 +230,11 @@ public abstract class Marshaller extends CommunContext {
      * @return
      * @throws Exception
      */
-    private Object makeInvokeGetMethodes(StringBuffer buffer, Object ob, Field[] fd, boolean longeurIndiquer, Properties desactivat_)
+    private Object makeInvokeGetMethodes(StringBuffer buffer, Object ob, Field[] fd, boolean longeurIndiquer, Properties desactivat)
             throws JFFPBException {
         Object obInvoke = null;
-        Set<Object> setDesactivate = getDesactivat().keySet();
-
+        Set<Object> setDesactivate = desactivat.keySet();
         boolean desactivateAttrib = setDesactivate.size() == 0 ? false : true;
-
-        if (desactivat_.keySet().size() != 0) {
-
-            setDesactivat(desactivat_);
-            desactivateAttrib = true;
-
-        }
-
         int longueurChaine = 0;
         int moduloDep = 0;
         int ifDesactiRecalc = 0;
@@ -227,7 +243,8 @@ public abstract class Marshaller extends CommunContext {
         for (Field field : fd) {
 
             PositionalMappingParse positionnalMappingParce = PositionalMakeAnnotation.getFieldPositionnalMappingParse(field);
-            if (positionnalMappingParce == null) {
+            // si il n'y a pas d'annotation ou si désactiver pour l'ecriture
+            if (positionnalMappingParce == null || positionnalMappingParce.desactivateOut()) {
                 continue;
             }
             if (desactivateAttrib && setDesactivate.contains(field.getName())) {
@@ -258,19 +275,22 @@ public abstract class Marshaller extends CommunContext {
             } else {
                 depart = buffer.length();
             }
+
+            // il prime sur positionnalMappingParce
+            PositionalJavaTypeAdapter positionnalJavaTypeAdapter = PositionalMakeAnnotation.getFielPositionnalJavaTypeAdapter(field);
+
+            if (positionnalJavaTypeAdapter != null) {
+                if (valu == null && !positionnalJavaTypeAdapter.DefaultValue().equals(PositionalDefault.class)) {
+                    valu = PositionalMakeAnnotation.typeAdapterDefault(positionnalJavaTypeAdapter.DefaultValue());
+                }
+
+            }
+
             if (valu == null && !"".equals(positionnalMappingParce.DefaultValue())) {
                 valu = positionnalMappingParce.DefaultValue();
             }
 
-            PositionalJavaTypeAdapter positionnalJavaTypeAdapter = PositionalMakeAnnotation.getFielPositionnalJavaTypeAdapter(field);
-
-            if (valu == null && positionnalJavaTypeAdapter != null && positionnalJavaTypeAdapter.DefaultValue() != PositionalDefault.class) {
-                valu = PositionalMakeAnnotation.typeAdapterValueDefault(positionnalJavaTypeAdapter.DefaultValue());
-
-            }
-
             if (valu != null) {
-
                 if (positionnalJavaTypeAdapter != null) {
                     obInvoke = PositionalMakeAnnotation.typeAdapter(valu, positionnalJavaTypeAdapter.value(), PARSING);
 
@@ -356,24 +376,28 @@ public abstract class Marshaller extends CommunContext {
             }
 
             PositionalJavaTypeAdapter positionnalJavaTypeAdapter = PositionalMakeAnnotation.getFielPositionnalJavaTypeAdapter(field);
+            if (positionnalJavaTypeAdapter != null) {
 
-            if (Valu == null && positionnalJavaTypeAdapter != null && positionnalJavaTypeAdapter.DefaultValue() != PositionalDefault.class) {
-                Valu = PositionalMakeAnnotation.typeAdapterValueDefault(positionnalJavaTypeAdapter.DefaultValue());
+                if (Valu == null && !positionnalJavaTypeAdapter.DefaultValue().equals(PositionalDefault.class)) {
+
+                    obInvoke = PositionalMakeAnnotation.typeAdapterDefault(positionnalJavaTypeAdapter.DefaultValue());
+                }
 
             }
 
             if (Valu != null) {
                 if (!(Valu instanceof List)) {
+
                     if (positionnalJavaTypeAdapter != null) {
                         obInvoke = PositionalMakeAnnotation.typeAdapter(Valu, positionnalJavaTypeAdapter.value(), PARSING);
 
                     } else {
+
+                        obInvoke = Valu.toString();
                         if (csvMappingParse.stripChaine()) {
                             obInvoke = StringUtils.strip(Valu.toString());
-                        } else {
-                            obInvoke = Valu.toString();
                         }
-                        obInvoke = Valu.toString();
+
                     }
                     PositionalControlRegex positionnalControlRegex = PositionalMakeAnnotation.getFielPositionnalControlRegex(field);
                     if (positionnalControlRegex != null) {

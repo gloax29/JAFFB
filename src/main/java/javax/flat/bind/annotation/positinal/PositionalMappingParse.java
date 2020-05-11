@@ -13,14 +13,20 @@ import java.lang.annotation.Target;
 /**
  * annotation de description des variables <br />
  * qui sont dans le fichier <br />
- * 
+ * .
+ *
+ * @author Gloaguen Joel
  * @see #offset()
  * @see #length()
  * @see #required()
  * @see #padding()
  * @see #charcatereRepliForPadding()
  * @see #stripChaine()
- * @author Gloaguen Joel
+ * @see #DefaultValue()
+ * @see #variant()
+ * @see #desactivate()
+ * @see #desactivateOut()
+ * @see #laste()
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ METHOD, FIELD })
@@ -102,10 +108,34 @@ public @interface PositionalMappingParse {
     boolean variant() default false;
 
     /**
-     * desactive la valeur
+     * desactive la valeur a la lecture
      * 
      * @return
      */
     boolean desactivate() default false;
+
+    /**
+     * desactive la valeur a l'ecriture<br />
+     * si cette valeur ne doit jamais etre ecrite
+     * 
+     * @return
+     */
+    boolean desactivateOut() default false;
+
+    /**
+     * Laste. permet la lecture d'un data variant avec une soustraction <br />
+     * des offsets suivant pour un recalcule des découpages <br />
+     * seule un last peur etre present dans la class
+     *
+     * @return true, if successful
+     */
+    boolean laste() default false;
+
+    /**
+     * Original. conserve la valeur original
+     * 
+     * @return the int
+     */
+    int original() default -1;
 
 }

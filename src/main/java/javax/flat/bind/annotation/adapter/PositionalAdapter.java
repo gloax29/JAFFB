@@ -18,7 +18,7 @@ import javax.flat.bind.JFFPBException;
 public abstract class PositionalAdapter<String, BoundType> {
 
 	/**
-     * pour convertir au format demand� � la creation de l object <br />
+     * pour convertir au format demandé à la creation de l object <br />
 	 * exemple : <br/>
 	 * String en Integer : 00001 en 1
 	 * 
